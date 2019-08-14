@@ -2,14 +2,27 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      page: 'checkout'
+      page: 'checkout',
+      id: ''
     };
     this.changePage = this.changePage.bind(this);
+    this.getUserId = this.getUserId.bind(this);
+    this.changeUserId = this.changeUserId.bind(this);
   }
 
   changePage(page) {
     this.setState({
       page
+    });
+  }
+
+  getUserId() {
+    return this.state.id;
+  }
+
+  changeUserId(id) {
+    this.setState({
+      id
     });
   }
 
@@ -22,18 +35,25 @@ class App extends React.Component {
 
       case 'accountcreation':
         return React.createElement(AccountCreation, {
+          changeUserId: this.changeUserId,
+          getUserId: this.getUserId,
           changePage: this.changePage
         });
 
       case 'addressform':
         return React.createElement(AddressForm, {
+          getUserId: this.getUserId,
           changePage: this.changePage
         });
 
       case 'paymentform':
         return React.createElement(PaymentForm, {
+          getUserId: this.getUserId,
           changePage: this.changePage
         });
+
+      case 'confirmationpage':
+        return React.createElement(ConfirmationPage, null);
     }
   }
 
@@ -60,7 +80,11 @@ class AccountCreation extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.changePage('addressform');
+    postInfo('user', this.state, result => {
+      console.log('response from server: ', result);
+      this.props.changeUserId(result);
+      this.props.changePage('addressform');
+    });
   }
 
   render() {
@@ -118,7 +142,11 @@ class AddressForm extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.changePage('paymentform');
+    let id = this.props.getUserId();
+    console.log('ID: ', this.props.getUserId());
+    updateInfo('update', id, this.state).then(response => {
+      this.props.changePage('paymentform');
+    });
   }
 
   render() {
@@ -180,9 +208,9 @@ class PaymentForm extends React.Component {
     super(props);
     this.state = {
       cc: '',
-      expdata: '',
+      exp: '',
       cvv: '',
-      zip: ''
+      billingzip: ''
     };
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
@@ -197,7 +225,10 @@ class PaymentForm extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.changePage('addressform');
+    let id = this.props.getUserId();
+    updateInfo('update', id, this.state).then(response => {
+      this.props.changePage('confirmationpage');
+    });
   }
 
   render() {
@@ -213,10 +244,10 @@ class PaymentForm extends React.Component {
     })), React.createElement("div", {
       className: "form"
     }, React.createElement("label", null, "Expiry Date: "), React.createElement("input", {
-      id: "expdate",
+      id: "exp",
       onChange: this.onChange,
       type: "text",
-      value: this.state.expdate
+      value: this.state.exp
     })), React.createElement("div", {
       className: "form"
     }, React.createElement("label", null, "CVV: "), React.createElement("input", {
@@ -227,15 +258,48 @@ class PaymentForm extends React.Component {
     })), React.createElement("div", {
       className: "form"
     }, React.createElement("label", null, "Billing Zip Code: "), React.createElement("input", {
-      id: "zip",
+      id: "billingzip",
       onChange: this.onChange,
       type: "text",
-      value: this.state.zip
+      value: this.state.billingzip
     })), React.createElement("div", null, React.createElement("button", {
       type: "submit"
     }, "Next"))));
   }
 
 }
+
+const ConfirmationPage = props => {};
+
+const postInfo = (route, options, cb = () => {}) => {
+  fetch('http://localhost:3000/' + route, {
+    method: 'POST',
+    body: JSON.stringify(options),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    return response.text();
+  }).then(text => {
+    cb(text);
+  });
+};
+
+const updateInfo = (route, id, options, cb = () => {}) => {
+  fetch('http://localhost:3000/' + route, {
+    method: 'PUT',
+    body: JSON.stringify({
+      id,
+      options
+    }),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    return response.text();
+  }).then(text => {
+    cb(text);
+  });
+};
 
 ReactDOM.render(React.createElement(App, null), document.querySelector('#app'));

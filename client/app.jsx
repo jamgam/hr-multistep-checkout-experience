@@ -2,9 +2,12 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      page: 'checkout'
+      page: 'checkout',
+      id: '',
     };
     this.changePage = this.changePage.bind(this);
+    this.getUserId = this.getUserId.bind(this);
+    this.changeUserId = this.changeUserId.bind(this);
   }
 
   changePage(page) {
@@ -13,16 +16,37 @@ class App extends React.Component {
     });
   }
 
+  getUserId() {
+    return this.state.id;
+  }
+
+  changeUserId(id) {
+    this.setState({
+      id
+    });
+  }
+
   render() {
     switch (this.state.page) {
     case 'checkout':
-      return <button onClick={()=> this.changePage('accountcreation')}>Checkout</button>;
+      return <button 
+        onClick={()=> this.changePage('accountcreation')}>Checkout</button>;
     case 'accountcreation':
-      return <AccountCreation changePage={this.changePage} />;
+      return <AccountCreation 
+        changeUserId={this.changeUserId}
+        getUserId={this.getUserId}
+        changePage={this.changePage} />;
     case 'addressform':
-      return <AddressForm changePage={this.changePage} />;
+      return <AddressForm 
+        getUserId={this.getUserId}
+        changePage={this.changePage} />;
     case 'paymentform':
-      return <PaymentForm changePage={this.changePage} />;
+      return <PaymentForm 
+        getUserId={this.getUserId}
+        changePage={this.changePage} />;
+    case 'confirmationpage':
+      return <ConfirmationPage />;
+
     }
   }
 }
@@ -48,7 +72,11 @@ class AccountCreation extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.changePage('addressform');
+    postInfo('user', this.state, (result) => {
+      console.log('response from server: ', result);
+      this.props.changeUserId(result);
+      this.props.changePage('addressform');
+    });
   }
 
   render() {
@@ -101,7 +129,11 @@ class AddressForm extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.changePage('paymentform');
+    let id = this.props.getUserId();
+    console.log('ID: ', this.props.getUserId());
+    updateInfo('update', id, this.state).then(response => {
+      this.props.changePage('paymentform');
+    });
   }
 
   render() {
@@ -110,7 +142,6 @@ class AddressForm extends React.Component {
         <form onSubmit={this.onSubmit}>
           <div className="form">
             <label>Address: </label>
-            {/* <input id="name" onChange={this.onChange} type="text" value={this.state.name}></input> */}
           </div>
           <div className="form">
             <label>Line 1: </label>
@@ -150,9 +181,9 @@ class PaymentForm extends React.Component {
     super(props);
     this.state = {
       cc: '',
-      expdata: '',
+      exp: '',
       cvv: '',
-      zip: '',
+      billingzip: '',
     };
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
@@ -167,7 +198,10 @@ class PaymentForm extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    this.props.changePage('addressform');
+    let id = this.props.getUserId();
+    updateInfo('update', id, this.state).then(response => {
+      this.props.changePage('confirmationpage');
+    });
   }
 
   render() {
@@ -180,7 +214,7 @@ class PaymentForm extends React.Component {
           </div>
           <div className="form">
             <label>Expiry Date: </label>
-            <input id="expdate" onChange={this.onChange} type="text" value={this.state.expdate}></input>
+            <input id="exp" onChange={this.onChange} type="text" value={this.state.exp}></input>
           </div>
           <div className="form">
             <label>CVV: </label>
@@ -188,7 +222,7 @@ class PaymentForm extends React.Component {
           </div>
           <div className="form">
             <label>Billing Zip Code: </label>
-            <input id="zip" onChange={this.onChange} type="text" value={this.state.zip}></input>
+            <input id="billingzip" onChange={this.onChange} type="text" value={this.state.billingzip}></input>
           </div>
           <div>
             <button type="submit">Next</button>
@@ -198,6 +232,41 @@ class PaymentForm extends React.Component {
     );
   }
 }
+
+const ConfirmationPage = props => {
+  
+};
+
+const postInfo = (route, options, cb = ()=>{}) => {
+  fetch('http://localhost:3000/' + route, {
+    method: 'POST',
+    body: JSON.stringify(options),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    return response.text();
+  }).then(text => {
+    cb(text);
+  });
+};
+
+const updateInfo = (route, id, options, cb = ()=>{}) => {
+  fetch('http://localhost:3000/' + route, {
+    method: 'PUT',
+    body: JSON.stringify({
+      id,
+      options
+    }),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    return response.text();
+  }).then(text => {
+    cb(text);
+  });
+};
 
 
 ReactDOM.render(<App />, document.querySelector('#app'));

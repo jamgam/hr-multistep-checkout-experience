@@ -24,8 +24,11 @@
     "commonjs": "0.0.1",
     "express": "^4.17.1",
     "lodash": "^4.17.15",
+    "morgan": "^1.9.1",
+    "mysql2": "^1.6.5",
     "react": "^16.9.0",
-    "react-dom": "^16.9.0"
+    "react-dom": "^16.9.0",
+    "sequelize": "^5.15.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.5",
