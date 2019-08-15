@@ -24,6 +24,14 @@ app.put('/update', (req, res) => {
   });
 });
 
+app.get('/payment', (req, res) => {
+  console.log('query: ', req.query);
+  let id = req.query.id;
+  models.Payment.findOne({where: {id}}).then(response => {
+    res.send(response);
+  });
+});
+
 app.post('/address', (req, res) => {
   console.log('address', req.body);
   res.send('hi');

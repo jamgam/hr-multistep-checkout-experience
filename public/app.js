@@ -3,17 +3,25 @@ class App extends React.Component {
     super(props);
     this.state = {
       page: 'checkout',
-      id: ''
+      id: '',
+      data: ''
     };
     this.changePage = this.changePage.bind(this);
     this.getUserId = this.getUserId.bind(this);
     this.changeUserId = this.changeUserId.bind(this);
   }
 
-  changePage(page) {
-    this.setState({
-      page
-    });
+  changePage(page, data = null) {
+    if (data) {
+      this.setState({
+        page,
+        data
+      });
+    } else {
+      this.setState({
+        page
+      });
+    }
   }
 
   getUserId() {
@@ -53,7 +61,10 @@ class App extends React.Component {
         });
 
       case 'confirmationpage':
-        return React.createElement(ConfirmationPage, null);
+        return React.createElement(ConfirmationPage, {
+          data: this.state.data,
+          changePage: this.changePage
+        });
     }
   }
 
@@ -81,7 +92,6 @@ class AccountCreation extends React.Component {
   onSubmit(e) {
     e.preventDefault();
     postInfo('user', this.state, result => {
-      console.log('response from server: ', result);
       this.props.changeUserId(result);
       this.props.changePage('addressform');
     });
@@ -143,8 +153,7 @@ class AddressForm extends React.Component {
   onSubmit(e) {
     e.preventDefault();
     let id = this.props.getUserId();
-    console.log('ID: ', this.props.getUserId());
-    updateInfo('update', id, this.state).then(response => {
+    updateInfo('update', id, this.state, response => {
       this.props.changePage('paymentform');
     });
   }
@@ -226,8 +235,10 @@ class PaymentForm extends React.Component {
   onSubmit(e) {
     e.preventDefault();
     let id = this.props.getUserId();
-    updateInfo('update', id, this.state).then(response => {
-      this.props.changePage('confirmationpage');
+    updateInfo('update', id, this.state, response => {
+      getRecord(id, data => {
+        this.props.changePage('confirmationpage', data);
+      });
     });
   }
 
@@ -269,7 +280,25 @@ class PaymentForm extends React.Component {
 
 }
 
-const ConfirmationPage = props => {};
+const ConfirmationPage = props => {
+  var str = '';
+  var data = JSON.parse(props.data);
+  let ignore = ['id', 'createdAt', 'updatedAt'];
+
+  for (let key in data) {
+    if (!ignore.includes(key)) {
+      str += `${key}: ${data[key]}\n`;
+    }
+  }
+
+  return React.createElement("div", {
+    style: {
+      whiteSpace: 'pre'
+    }
+  }, str, React.createElement("button", {
+    onClick: () => props.changePage('checkout')
+  }, "Confirm"));
+};
 
 const postInfo = (route, options, cb = () => {}) => {
   fetch('http://localhost:3000/' + route, {
@@ -296,6 +325,19 @@ const updateInfo = (route, id, options, cb = () => {}) => {
       'Content-Type': 'application/json'
     }
   }).then(response => {
+    return response.text();
+  }).then(text => {
+    cb(text);
+  });
+};
+
+const getRecord = (id, cb = () => {}) => {
+  var url = new URL('http://localhost:3000/payment');
+  var params = {
+    id
+  };
+  url.search = new URLSearchParams(params);
+  fetch(url).then(response => {
     return response.text();
   }).then(text => {
     cb(text);
