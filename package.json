@@ -28,7 +28,7 @@
     "mysql2": "^1.6.5",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
-    "sequelize": "^5.15.0"
+    "sequelize": "^5.15.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.5",
